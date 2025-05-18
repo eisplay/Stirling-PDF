@@ -13,4 +13,10 @@
   - See git history
 
 
+- Add a default cas to this switch
+  - Added default setting element to null on default or error message
+  - See an example below:
+  -![AccountWebControllerIssuesSwitchDefaultNull.png](images/AccountWebControllerIssuesSwitchDefaultNull.png)
+
+
 -
