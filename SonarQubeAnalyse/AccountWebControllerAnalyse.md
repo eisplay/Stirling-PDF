@@ -6,3 +6,11 @@
   - See the changes below:
   - ![AccountWebControllerIssuesFillProviderList.png](images/AccountWebControllerIssuesFillProviderList.png)
   - ![AccountWebControllerIssuesGenerateErrorOAuthString.png](images/AccountWebControllerIssuesGenerateErrorOAuthString.png)
+
+
+- "Brain Method" detected (showAddUserForm function)
+  - Did the same as for the login function
+  - See git history
+
+
+-
