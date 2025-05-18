@@ -69,6 +69,69 @@ public class AccountWebController {
         this.runningEE = runningEE;
     }
 
+
+    private void fillProviderList(OAUTH2 oauth, Map<String, String> providerList){
+        Client client = oauth.getClient();
+
+        if (client != null) {
+            GoogleProvider google = client.getGoogle();
+
+            if (validateProvider(google)) {
+                providerList.put(
+                    OAUTH_2_AUTHORIZATION + google.getName(), google.getClientName());
+            }
+
+            GitHubProvider github = client.getGithub();
+
+            if (validateProvider(github)) {
+                providerList.put(
+                    OAUTH_2_AUTHORIZATION + github.getName(), github.getClientName());
+            }
+
+            KeycloakProvider keycloak = client.getKeycloak();
+
+            if (validateProvider(keycloak)) {
+                providerList.put(
+                    OAUTH_2_AUTHORIZATION + keycloak.getName(),
+                    keycloak.getClientName());
+            }
+        }
+    }
+
+
+
+
+
+    private String generateErrorOAuthString(String errorOAuth){
+        switch (errorOAuth) {
+            case "oAuth2AutoCreateDisabled" -> errorOAuth = "login.oAuth2AutoCreateDisabled";
+            case "invalidUsername" -> errorOAuth = "login.invalid";
+            case "userAlreadyExistsWeb" -> errorOAuth = "userAlreadyExistsWebMessage";
+            case "oAuth2AuthenticationErrorWeb" -> errorOAuth = "login.oauth2InvalidUserType";
+            case "invalid_token_response" -> errorOAuth = "login.oauth2InvalidTokenResponse";
+            case "authorization_request_not_found" ->
+                errorOAuth = "login.oauth2RequestNotFound";
+            case "access_denied" -> errorOAuth = "login.oauth2AccessDenied";
+            case "invalid_user_info_response" ->
+                errorOAuth = "login.oauth2InvalidUserInfoResponse";
+            case "invalid_request" -> errorOAuth = "login.oauth2invalidRequest";
+            case "invalid_id_token" -> errorOAuth = "login.oauth2InvalidIdToken";
+            case "oAuth2AdminBlockedUser" -> errorOAuth = "login.oAuth2AdminBlockedUser";
+            case "userIsDisabled" -> errorOAuth = "login.userIsDisabled";
+            case "invalid_destination" -> errorOAuth = "login.invalid_destination";
+            case "relying_party_registration_not_found" ->
+                errorOAuth = "login.relyingPartyRegistrationNotFound";
+            // Valid InResponseTo was not available from the validation context, unable to
+            // evaluate
+            case "invalid_in_response_to" -> errorOAuth = "login.invalid_in_response_to";
+            case "not_authentication_provider_found" ->
+                errorOAuth = "login.not_authentication_provider_found";
+        }
+
+        return errorOAuth;
+    }
+
+
     @GetMapping("/login")
     public String login(HttpServletRequest request, Model model, Authentication authentication) {
         // If the user is already authenticated, redirect them to the home page.
@@ -89,31 +152,7 @@ public class AccountWebController {
                     providerList.put(OAUTH_2_AUTHORIZATION + oauth.getProvider(), clientName);
                 }
 
-                Client client = oauth.getClient();
-
-                if (client != null) {
-                    GoogleProvider google = client.getGoogle();
-
-                    if (validateProvider(google)) {
-                        providerList.put(
-                                OAUTH_2_AUTHORIZATION + google.getName(), google.getClientName());
-                    }
-
-                    GitHubProvider github = client.getGithub();
-
-                    if (validateProvider(github)) {
-                        providerList.put(
-                                OAUTH_2_AUTHORIZATION + github.getName(), github.getClientName());
-                    }
-
-                    KeycloakProvider keycloak = client.getKeycloak();
-
-                    if (validateProvider(keycloak)) {
-                        providerList.put(
-                                OAUTH_2_AUTHORIZATION + keycloak.getName(),
-                                keycloak.getClientName());
-                    }
-                }
+                fillProviderList(oauth, providerList);
             }
         }
 
@@ -158,30 +197,7 @@ public class AccountWebController {
         String errorOAuth = request.getParameter("errorOAuth");
 
         if (errorOAuth != null) {
-            switch (errorOAuth) {
-                case "oAuth2AutoCreateDisabled" -> errorOAuth = "login.oAuth2AutoCreateDisabled";
-                case "invalidUsername" -> errorOAuth = "login.invalid";
-                case "userAlreadyExistsWeb" -> errorOAuth = "userAlreadyExistsWebMessage";
-                case "oAuth2AuthenticationErrorWeb" -> errorOAuth = "login.oauth2InvalidUserType";
-                case "invalid_token_response" -> errorOAuth = "login.oauth2InvalidTokenResponse";
-                case "authorization_request_not_found" ->
-                        errorOAuth = "login.oauth2RequestNotFound";
-                case "access_denied" -> errorOAuth = "login.oauth2AccessDenied";
-                case "invalid_user_info_response" ->
-                        errorOAuth = "login.oauth2InvalidUserInfoResponse";
-                case "invalid_request" -> errorOAuth = "login.oauth2invalidRequest";
-                case "invalid_id_token" -> errorOAuth = "login.oauth2InvalidIdToken";
-                case "oAuth2AdminBlockedUser" -> errorOAuth = "login.oAuth2AdminBlockedUser";
-                case "userIsDisabled" -> errorOAuth = "login.userIsDisabled";
-                case "invalid_destination" -> errorOAuth = "login.invalid_destination";
-                case "relying_party_registration_not_found" ->
-                        errorOAuth = "login.relyingPartyRegistrationNotFound";
-                // Valid InResponseTo was not available from the validation context, unable to
-                // evaluate
-                case "invalid_in_response_to" -> errorOAuth = "login.invalid_in_response_to";
-                case "not_authentication_provider_found" ->
-                        errorOAuth = "login.not_authentication_provider_found";
-            }
+            errorOAuth = generateErrorOAuthString(errorOAuth);
 
             model.addAttribute("errorOAuth", errorOAuth);
         }
