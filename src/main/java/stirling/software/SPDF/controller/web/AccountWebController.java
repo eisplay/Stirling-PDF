@@ -222,18 +222,16 @@ public class AccountWebController {
         return "usage";
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @GetMapping("/adminSettings")
-    public String showAddUserForm(
-            HttpServletRequest request, Model model, Authentication authentication) {
-        List<User> allUsers = userRepository.findAll();
-        Iterator<User> iterator = allUsers.iterator();
-        Map<String, String> roleDetails = Role.getAllRoleDetails();
-        // Map to store session information and user activity status
-        Map<String, Boolean> userSessions = new HashMap<>();
-        Map<String, Date> userLastRequest = new HashMap<>();
+
+    private record ActiveInactiveUsers(int activeUsers, int inactiveUsers) {}
+
+    private ActiveInactiveUsers setActiveInactiveUsers(Iterator<User> iterator,
+                                                       Map<String, String> roleDetails,
+                                                       Map<String, Boolean> userSessions,
+                                                       Map<String, Date> userLastRequest) {
         int activeUsers = 0;
         int disabledUsers = 0;
+
         while (iterator.hasNext()) {
             User user = iterator.next();
             if (user != null) {
@@ -250,16 +248,16 @@ public class AccountWebController {
                 boolean hasActiveSession = false;
                 Date lastRequest = null;
                 Optional<SessionEntity> latestSession =
-                        sessionPersistentRegistry.findLatestSession(user.getUsername());
+                    sessionPersistentRegistry.findLatestSession(user.getUsername());
                 if (latestSession.isPresent()) {
                     SessionEntity sessionEntity = latestSession.get();
                     Date lastAccessedTime = sessionEntity.getLastRequest();
                     Instant now = Instant.now();
                     // Calculate session expiration and update session status accordingly
                     Instant expirationTime =
-                            lastAccessedTime
-                                    .toInstant()
-                                    .plus(maxInactiveInterval, ChronoUnit.SECONDS);
+                        lastAccessedTime
+                            .toInstant()
+                            .plus(maxInactiveInterval, ChronoUnit.SECONDS);
                     if (now.isAfter(expirationTime)) {
                         sessionPersistentRegistry.expireSession(sessionEntity.getSessionId());
                     } else {
@@ -280,6 +278,29 @@ public class AccountWebController {
                 }
             }
         }
+
+        return new ActiveInactiveUsers(activeUsers, disabledUsers);
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/adminSettings")
+    public String showAddUserForm(
+            HttpServletRequest request, Model model, Authentication authentication) {
+        List<User> allUsers = userRepository.findAll();
+        Iterator<User> iterator = allUsers.iterator();
+        Map<String, String> roleDetails = Role.getAllRoleDetails();
+        // Map to store session information and user activity status
+        Map<String, Boolean> userSessions = new HashMap<>();
+        Map<String, Date> userLastRequest = new HashMap<>();
+        int activeUsers = 0;
+        int disabledUsers = 0;
+
+        ActiveInactiveUsers activeInactiveUsers = setActiveInactiveUsers(iterator, roleDetails,
+            userSessions, userLastRequest);
+        activeUsers = activeInactiveUsers.activeUsers;
+        disabledUsers = activeInactiveUsers.inactiveUsers;
+
         // Sort users by active status and last request date
         List<User> sortedUsers =
                 allUsers.stream()
