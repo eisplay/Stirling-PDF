@@ -126,6 +126,7 @@ public class AccountWebController {
             case "invalid_in_response_to" -> errorOAuth = "login.invalid_in_response_to";
             case "not_authentication_provider_found" ->
                 errorOAuth = "login.not_authentication_provider_found";
+            default -> errorOAuth = "login.oauth2UnknownError";
         }
 
         return errorOAuth;
@@ -189,6 +190,7 @@ public class AccountWebController {
                 case "badCredentials" -> error = "login.invalid";
                 case "locked" -> error = "login.locked";
                 case "oauth2AuthenticationError" -> error = "userAlreadyExistsOAuthMessage";
+                default -> error = "login.unknownError";
             }
 
             model.addAttribute("error", error);
@@ -421,6 +423,7 @@ public class AccountWebController {
                         case "incorrectPassword" -> messageType = "incorrectPasswordMessage";
                         case "usernameExists" -> messageType = "usernameExistsMessage";
                         case "invalidUsername" -> messageType = "invalidUsernameMessage";
+                        default -> messageType = null;
                     }
                 }
 
