@@ -106,7 +106,7 @@ public class ConvertOfficeController {
                                     .replaceFirst("[.][^.]+$", "")
                             + "_convertedToPDF.pdf");
         } finally {
-            if (file != null) file.delete();
+            if (file != null) Files.delete(file.toPath());
         }
     }
 }
