@@ -98,15 +98,14 @@ public class AppConfig {
     @Bean(name = "enableAlphaFunctionality")
     public boolean enableAlphaFunctionality() {
         return applicationProperties.getSystem().getEnableAlphaFunctionality() != null
-                ? applicationProperties.getSystem().getEnableAlphaFunctionality()
-                : false;
+                && applicationProperties.getSystem().getEnableAlphaFunctionality();
     }
 
     @Bean(name = "rateLimit")
     public boolean rateLimit() {
         String rateLimit = System.getProperty("rateLimit");
         if (rateLimit == null) rateLimit = System.getenv("rateLimit");
-        return (rateLimit != null) ? Boolean.valueOf(rateLimit) : false;
+        return rateLimit != null && Boolean.valueOf(rateLimit);
     }
 
     @Bean(name = "runningInDocker")
