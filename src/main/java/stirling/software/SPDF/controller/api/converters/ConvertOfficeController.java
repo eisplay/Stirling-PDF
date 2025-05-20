@@ -67,8 +67,7 @@ public class ConvertOfficeController {
                                     "pdf",
                                     tempInputFile.toString(),
                                     tempOutputFile.toString()));
-            ProcessExecutorResult returnCode =
-                    ProcessExecutor.getInstance(ProcessExecutor.Processes.LIBRE_OFFICE)
+            ProcessExecutor.getInstance(ProcessExecutor.Processes.LIBRE_OFFICE)
                             .runCommandWithOutputHandling(command);
 
             // Read the converted PDF file
