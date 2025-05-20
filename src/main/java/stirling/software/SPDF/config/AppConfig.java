@@ -109,7 +109,7 @@ public class AppConfig {
         return (rateLimit != null) ? Boolean.valueOf(rateLimit) : false;
     }
 
-    @Bean(name = "RunningInDocker")
+    @Bean(name = "runningInDocker")
     public boolean runningInDocker() {
         return Files.exists(Paths.get("/.dockerenv"));
     }
@@ -188,12 +188,12 @@ public class AppConfig {
         return applicationProperties.getSystem().isAnalyticsEnabled();
     }
 
-    @Bean(name = "StirlingPDFLabel")
+    @Bean(name = "stirlingPDFLabel")
     public String stirlingPDFLabel() {
         return "Stirling-PDF" + " v" + appVersion();
     }
 
-    @Bean(name = "UUID")
+    @Bean(name = "uuid")
     public String uuid() {
         return applicationProperties.getAutomaticallyGenerated().getUUID();
     }
