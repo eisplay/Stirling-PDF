@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
@@ -125,8 +126,8 @@ public class AppConfig {
         if (!Files.exists(mountInfo)) {
             return true;
         }
-        try {
-            return Files.lines(mountInfo).anyMatch(line -> line.contains(" /configs "));
+        try (Stream<String> lines = Files.lines(mountInfo)) { // Use try-with-resources
+            return lines.anyMatch(line -> line.contains(" /configs "));
         } catch (IOException e) {
             return false;
         }
