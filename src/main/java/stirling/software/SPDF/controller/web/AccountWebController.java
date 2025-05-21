@@ -69,6 +69,70 @@ public class AccountWebController {
         this.runningEE = runningEE;
     }
 
+
+    private void fillProviderList(OAUTH2 oauth, Map<String, String> providerList){
+        Client client = oauth.getClient();
+
+        if (client != null) {
+            GoogleProvider google = client.getGoogle();
+
+            if (validateProvider(google)) {
+                providerList.put(
+                    OAUTH_2_AUTHORIZATION + google.getName(), google.getClientName());
+            }
+
+            GitHubProvider github = client.getGithub();
+
+            if (validateProvider(github)) {
+                providerList.put(
+                    OAUTH_2_AUTHORIZATION + github.getName(), github.getClientName());
+            }
+
+            KeycloakProvider keycloak = client.getKeycloak();
+
+            if (validateProvider(keycloak)) {
+                providerList.put(
+                    OAUTH_2_AUTHORIZATION + keycloak.getName(),
+                    keycloak.getClientName());
+            }
+        }
+    }
+
+
+
+
+
+    private String generateErrorOAuthString(String errorOAuth){
+        switch (errorOAuth) {
+            case "oAuth2AutoCreateDisabled" -> errorOAuth = "login.oAuth2AutoCreateDisabled";
+            case "invalidUsername" -> errorOAuth = "login.invalid";
+            case "userAlreadyExistsWeb" -> errorOAuth = "userAlreadyExistsWebMessage";
+            case "oAuth2AuthenticationErrorWeb" -> errorOAuth = "login.oauth2InvalidUserType";
+            case "invalid_token_response" -> errorOAuth = "login.oauth2InvalidTokenResponse";
+            case "authorization_request_not_found" ->
+                errorOAuth = "login.oauth2RequestNotFound";
+            case "access_denied" -> errorOAuth = "login.oauth2AccessDenied";
+            case "invalid_user_info_response" ->
+                errorOAuth = "login.oauth2InvalidUserInfoResponse";
+            case "invalid_request" -> errorOAuth = "login.oauth2invalidRequest";
+            case "invalid_id_token" -> errorOAuth = "login.oauth2InvalidIdToken";
+            case "oAuth2AdminBlockedUser" -> errorOAuth = "login.oAuth2AdminBlockedUser";
+            case "userIsDisabled" -> errorOAuth = "login.userIsDisabled";
+            case "invalid_destination" -> errorOAuth = "login.invalid_destination";
+            case "relying_party_registration_not_found" ->
+                errorOAuth = "login.relyingPartyRegistrationNotFound";
+            // Valid InResponseTo was not available from the validation context, unable to
+            // evaluate
+            case "invalid_in_response_to" -> errorOAuth = "login.invalid_in_response_to";
+            case "not_authentication_provider_found" ->
+                errorOAuth = "login.not_authentication_provider_found";
+            default -> errorOAuth = "login.oauth2UnknownError";
+        }
+
+        return errorOAuth;
+    }
+
+
     @GetMapping("/login")
     public String login(HttpServletRequest request, Model model, Authentication authentication) {
         // If the user is already authenticated, redirect them to the home page.
@@ -89,31 +153,7 @@ public class AccountWebController {
                     providerList.put(OAUTH_2_AUTHORIZATION + oauth.getProvider(), clientName);
                 }
 
-                Client client = oauth.getClient();
-
-                if (client != null) {
-                    GoogleProvider google = client.getGoogle();
-
-                    if (validateProvider(google)) {
-                        providerList.put(
-                                OAUTH_2_AUTHORIZATION + google.getName(), google.getClientName());
-                    }
-
-                    GitHubProvider github = client.getGithub();
-
-                    if (validateProvider(github)) {
-                        providerList.put(
-                                OAUTH_2_AUTHORIZATION + github.getName(), github.getClientName());
-                    }
-
-                    KeycloakProvider keycloak = client.getKeycloak();
-
-                    if (validateProvider(keycloak)) {
-                        providerList.put(
-                                OAUTH_2_AUTHORIZATION + keycloak.getName(),
-                                keycloak.getClientName());
-                    }
-                }
+                fillProviderList(oauth, providerList);
             }
         }
 
@@ -150,6 +190,7 @@ public class AccountWebController {
                 case "badCredentials" -> error = "login.invalid";
                 case "locked" -> error = "login.locked";
                 case "oauth2AuthenticationError" -> error = "userAlreadyExistsOAuthMessage";
+                default -> error = "login.unknownError";
             }
 
             model.addAttribute("error", error);
@@ -158,30 +199,7 @@ public class AccountWebController {
         String errorOAuth = request.getParameter("errorOAuth");
 
         if (errorOAuth != null) {
-            switch (errorOAuth) {
-                case "oAuth2AutoCreateDisabled" -> errorOAuth = "login.oAuth2AutoCreateDisabled";
-                case "invalidUsername" -> errorOAuth = "login.invalid";
-                case "userAlreadyExistsWeb" -> errorOAuth = "userAlreadyExistsWebMessage";
-                case "oAuth2AuthenticationErrorWeb" -> errorOAuth = "login.oauth2InvalidUserType";
-                case "invalid_token_response" -> errorOAuth = "login.oauth2InvalidTokenResponse";
-                case "authorization_request_not_found" ->
-                        errorOAuth = "login.oauth2RequestNotFound";
-                case "access_denied" -> errorOAuth = "login.oauth2AccessDenied";
-                case "invalid_user_info_response" ->
-                        errorOAuth = "login.oauth2InvalidUserInfoResponse";
-                case "invalid_request" -> errorOAuth = "login.oauth2invalidRequest";
-                case "invalid_id_token" -> errorOAuth = "login.oauth2InvalidIdToken";
-                case "oAuth2AdminBlockedUser" -> errorOAuth = "login.oAuth2AdminBlockedUser";
-                case "userIsDisabled" -> errorOAuth = "login.userIsDisabled";
-                case "invalid_destination" -> errorOAuth = "login.invalid_destination";
-                case "relying_party_registration_not_found" ->
-                        errorOAuth = "login.relyingPartyRegistrationNotFound";
-                // Valid InResponseTo was not available from the validation context, unable to
-                // evaluate
-                case "invalid_in_response_to" -> errorOAuth = "login.invalid_in_response_to";
-                case "not_authentication_provider_found" ->
-                        errorOAuth = "login.not_authentication_provider_found";
-            }
+            errorOAuth = generateErrorOAuthString(errorOAuth);
 
             model.addAttribute("errorOAuth", errorOAuth);
         }
@@ -206,18 +224,16 @@ public class AccountWebController {
         return "usage";
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @GetMapping("/adminSettings")
-    public String showAddUserForm(
-            HttpServletRequest request, Model model, Authentication authentication) {
-        List<User> allUsers = userRepository.findAll();
-        Iterator<User> iterator = allUsers.iterator();
-        Map<String, String> roleDetails = Role.getAllRoleDetails();
-        // Map to store session information and user activity status
-        Map<String, Boolean> userSessions = new HashMap<>();
-        Map<String, Date> userLastRequest = new HashMap<>();
+
+    private record ActiveInactiveUsers(int activeUsers, int inactiveUsers) {}
+
+    private ActiveInactiveUsers setActiveInactiveUsers(Iterator<User> iterator,
+                                                       Map<String, String> roleDetails,
+                                                       Map<String, Boolean> userSessions,
+                                                       Map<String, Date> userLastRequest) {
         int activeUsers = 0;
         int disabledUsers = 0;
+
         while (iterator.hasNext()) {
             User user = iterator.next();
             if (user != null) {
@@ -234,16 +250,16 @@ public class AccountWebController {
                 boolean hasActiveSession = false;
                 Date lastRequest = null;
                 Optional<SessionEntity> latestSession =
-                        sessionPersistentRegistry.findLatestSession(user.getUsername());
+                    sessionPersistentRegistry.findLatestSession(user.getUsername());
                 if (latestSession.isPresent()) {
                     SessionEntity sessionEntity = latestSession.get();
                     Date lastAccessedTime = sessionEntity.getLastRequest();
                     Instant now = Instant.now();
                     // Calculate session expiration and update session status accordingly
                     Instant expirationTime =
-                            lastAccessedTime
-                                    .toInstant()
-                                    .plus(maxInactiveInterval, ChronoUnit.SECONDS);
+                        lastAccessedTime
+                            .toInstant()
+                            .plus(maxInactiveInterval, ChronoUnit.SECONDS);
                     if (now.isAfter(expirationTime)) {
                         sessionPersistentRegistry.expireSession(sessionEntity.getSessionId());
                     } else {
@@ -264,6 +280,29 @@ public class AccountWebController {
                 }
             }
         }
+
+        return new ActiveInactiveUsers(activeUsers, disabledUsers);
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/adminSettings")
+    public String showAddUserForm(
+            HttpServletRequest request, Model model, Authentication authentication) {
+        List<User> allUsers = userRepository.findAll();
+        Iterator<User> iterator = allUsers.iterator();
+        Map<String, String> roleDetails = Role.getAllRoleDetails();
+        // Map to store session information and user activity status
+        Map<String, Boolean> userSessions = new HashMap<>();
+        Map<String, Date> userLastRequest = new HashMap<>();
+        int activeUsers = 0;
+        int disabledUsers = 0;
+
+        ActiveInactiveUsers activeInactiveUsers = setActiveInactiveUsers(iterator, roleDetails,
+            userSessions, userLastRequest);
+        activeUsers = activeInactiveUsers.activeUsers;
+        disabledUsers = activeInactiveUsers.inactiveUsers;
+
         // Sort users by active status and last request date
         List<User> sortedUsers =
                 allUsers.stream()
@@ -384,6 +423,7 @@ public class AccountWebController {
                         case "incorrectPassword" -> messageType = "incorrectPasswordMessage";
                         case "usernameExists" -> messageType = "usernameExistsMessage";
                         case "invalidUsername" -> messageType = "invalidUsernameMessage";
+                        default -> messageType = null;
                     }
                 }
 
