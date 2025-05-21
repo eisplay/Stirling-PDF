@@ -67,8 +67,7 @@ public class ConvertOfficeController {
                                     "pdf",
                                     tempInputFile.toString(),
                                     tempOutputFile.toString()));
-            ProcessExecutorResult returnCode =
-                    ProcessExecutor.getInstance(ProcessExecutor.Processes.LIBRE_OFFICE)
+            ProcessExecutor.getInstance(ProcessExecutor.Processes.LIBRE_OFFICE)
                             .runCommandWithOutputHandling(command);
 
             // Read the converted PDF file
@@ -93,8 +92,6 @@ public class ConvertOfficeController {
     public ResponseEntity<byte[]> processFileToPDF(@ModelAttribute GeneralFile generalFile)
             throws Exception {
         MultipartFile inputFile = generalFile.getFileInput();
-        // unused but can start server instance if startup time is to long
-        // LibreOfficeListener.getInstance().start();
         File file = null;
         try {
             file = convertToPdf(inputFile);
@@ -106,7 +103,7 @@ public class ConvertOfficeController {
                                     .replaceFirst("[.][^.]+$", "")
                             + "_convertedToPDF.pdf");
         } finally {
-            if (file != null) file.delete();
+            if (file != null) Files.delete(file.toPath());
         }
     }
 }

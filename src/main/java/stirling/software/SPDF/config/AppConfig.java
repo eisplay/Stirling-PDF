@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
@@ -98,18 +99,17 @@ public class AppConfig {
     @Bean(name = "enableAlphaFunctionality")
     public boolean enableAlphaFunctionality() {
         return applicationProperties.getSystem().getEnableAlphaFunctionality() != null
-                ? applicationProperties.getSystem().getEnableAlphaFunctionality()
-                : false;
+                && applicationProperties.getSystem().getEnableAlphaFunctionality();
     }
 
     @Bean(name = "rateLimit")
     public boolean rateLimit() {
         String rateLimit = System.getProperty("rateLimit");
         if (rateLimit == null) rateLimit = System.getenv("rateLimit");
-        return (rateLimit != null) ? Boolean.valueOf(rateLimit) : false;
+        return rateLimit != null && Boolean.valueOf(rateLimit);
     }
 
-    @Bean(name = "RunningInDocker")
+    @Bean(name = "runningInDocker")
     public boolean runningInDocker() {
         return Files.exists(Paths.get("/.dockerenv"));
     }
@@ -126,8 +126,8 @@ public class AppConfig {
         if (!Files.exists(mountInfo)) {
             return true;
         }
-        try {
-            return Files.lines(mountInfo).anyMatch(line -> line.contains(" /configs "));
+        try (Stream<String> lines = Files.lines(mountInfo)) { // Use try-with-resources
+            return lines.anyMatch(line -> line.contains(" /configs "));
         } catch (IOException e) {
             return false;
         }
@@ -188,12 +188,12 @@ public class AppConfig {
         return applicationProperties.getSystem().isAnalyticsEnabled();
     }
 
-    @Bean(name = "StirlingPDFLabel")
+    @Bean(name = "stirlingPDFLabel")
     public String stirlingPDFLabel() {
         return "Stirling-PDF" + " v" + appVersion();
     }
 
-    @Bean(name = "UUID")
+    @Bean(name = "uuid")
     public String uuid() {
         return applicationProperties.getAutomaticallyGenerated().getUUID();
     }
